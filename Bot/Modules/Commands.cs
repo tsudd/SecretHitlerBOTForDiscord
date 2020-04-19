@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using System.Linq;
 using Discord;
 using Discord.Commands;
 using Discord.Rest;
@@ -65,31 +66,65 @@ namespace Bot.Modules //this is code where we are writing our commands
         public async Task Start()
         {
             var StartVoteMessage = await Context.Channel
-                .SendMessageAsync("The game is about to start. Press 👍 to take part");
+                .SendMessageAsync("The game will start in 42 seconds. Press 👍 to take part");
             await StartVoteMessage.AddReactionAsync(new Emoji("👍"));
-            if (StartVoteMessage == null)
-            {
-                await Context.Channel.SendMessageAsync("Fuck this shit");
-            }
-            await Task.Delay(10000);
-            var arr = await StartVoteMessage
+            await Task.Delay(7*1000); //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+            var arr = (await StartVoteMessage
                 .GetReactionUsersAsync(new Emoji("👍"), 11)
-                .FlattenAsync();
-            //var arr = await StartVoteMessage.GetReactionUsersAsync(new Emoji("👍"), 11).FlattenAsync();
-
-            await Context.Channel.SendMessageAsync("Players:");
-            var it = arr.GetEnumerator();
-            while (it.MoveNext())
+                .FlattenAsync()).ToArray();
+            for (int i = 1; i < arr.Length; i++)
             {
-                var i = it.Current;
+                if (arr[i].IsBot)
+                {
+                    SH.DamnMethods.Swap(ref arr[i], ref arr[0]);
+                }
+            }
+            if (!arr[0].IsBot)
+            {
+                Console.WriteLine("Bot is missing!");
+                throw new Exception("Bot is not in the game!");
+            }
+            await Context.Channel.SendMessageAsync("Players:");
+            foreach (var i in arr)
+            {
                 if (!i.IsBot)
                 {
                     await Context.Channel.SendMessageAsync($"{i.Username} is in the game!");
                 }
             }
-            it.Reset();
 
-            ...
+            SocketTextChannel[] chnls = new SocketTextChannel[arr.Length];
+            chnls[0] = Context.Channel as SocketTextChannel;
+            var channels = Context.Guild.TextChannels;
+            foreach (var chnl in channels)
+            {
+                try
+                {
+                    if (chnl.Name.StartsWith("player")) {
+                        int num = Convert.ToInt32(chnl.Name.Substring(6));
+                        if (0 < num && num < arr.Length)
+                        {
+                            chnls[num] = chnl;
+                            await chnl.SendMessageAsync("Heil!");
+                        }
+                    }
+                }
+                catch
+                {
+                    Console.WriteLine($"Whoops! I thought that {chnl.Name} is player channel!");
+                }
+            }
+
+            try
+            {
+                var SecretHitlerGame = new SH.Game(Context.Guild, arr);
+                SecretHitlerGame.Play(chnls);
+            }
+            catch
+            {
+                await Context.Channel.SendMessageAsync("Critical error. Exit game.");
+            }
+
         }
 
         [Command("break")]
