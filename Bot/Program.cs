@@ -26,7 +26,7 @@ namespace Bot
                 .AddSingleton(_commands)
                 .BuildServiceProvider();
 
-            string token = "TOKEN_HERE"; //unic token of our bot(don't show anyone! copy here from VK)
+            string token = "NzAwMDU0NDU2Nzg3NjY1MDA3.Xpw0gw._qp0X0wJ9A7aENXO2xt3yJDXcEU"; //unic token of our bot(don't show anyone! copy here from VK)
 
             _client.Log += _client_Log;
 
