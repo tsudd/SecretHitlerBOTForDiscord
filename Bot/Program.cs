@@ -26,7 +26,7 @@ namespace Bot
                 .AddSingleton(_commands)
                 .BuildServiceProvider();
 
-            string token = "TokenHere"; //unic token of our bot(don't show anyone! copy here from VK)
+            string token = "NzAwMDU0NDU2Nzg3NjY1MDA3.Xp3VQA.AfNHPfrf53lOUxQiNXA-dpCJojU"; //unic token of our bot(don't show anyone! copy here from VK)
 
             _client.Log += _client_Log;
 
@@ -55,7 +55,7 @@ namespace Bot
         {
             var message = arg as SocketUserMessage; //gets message from the chat
             var context = new SocketCommandContext(_client, message); //gets context (not really sure what this is)
-            if (message.Author.IsBot) return; //doesn's allow BOT answer his own messages
+            //if (message.Author.IsBot) return; //doesn's allow BOT answer his own messages
 
             int argPos = 0;//maybe position of the char in message
             if (message.HasStringPrefix("/", ref argPos))//looking for command-char in our case this is a '/' like minecraft
