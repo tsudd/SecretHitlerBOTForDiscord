@@ -19,167 +19,235 @@ namespace Bot.Modules //this is code where we are writing our commands
             await ReplyAsync("Hello buddy").ConfigureAwait(false); //an example how BOT replies
         }
 
-        [Command("saymyname")]
-        public async Task SayMyName()
-        {
-            SocketUser user = Context.User;
-            await ReplyAsync($"Hello, {user.Username} ({user.Id})").ConfigureAwait(false);
-        }
-
-        [Command("getchannelid")]
-        public async Task GetChannelId()
-        {
-            var ch = Context.Channel;
-            await ReplyAsync($"Heil, {ch.Name} ({ch.Id})").ConfigureAwait(false);
-        }
-
         [Command("sieg")]
         public async Task Sieg()
         {
             var channels = Context.Guild.TextChannels;
-            await ReplyAsync("Heil in 3 sec...").ConfigureAwait(false);
-            await Task.Delay(3 * 1000).ConfigureAwait(false);
             foreach (var i in channels)
             {
                 await i.SendMessageAsync("Heil").ConfigureAwait(false);
             }
-            await ReplyAsync("Hitler in 3 sec...").ConfigureAwait(false);
-            await Task.Delay(3 * 1000).ConfigureAwait(false);
             foreach (var i in channels)
             {
-                var NoWarningsPlease = i.SendMessageAsync("Hitler").ConfigureAwait(false);
+                _ = i.SendMessageAsync("Hitler").ConfigureAwait(false);
             }
         }
 
-        [Command("react")]
-        public async Task ReactWithEmoteAsync()
+        [Command("test")]
+        public async Task Test()
         {
-            var emoji = new Emoji("👍");
-            await Context.Message.AddReactionAsync(emoji).ConfigureAwait(false);
+            await Context.Channel.SendMessageAsync("TEEEST").ConfigureAwait(false);
+
+
         }
 
-        [Command("start")]
-        public async Task Start()
+        [Command("clear")]
+        public async Task Clear(string prefix = "player")
         {
+            var AllChannels = Context.Guild.Channels.ToArray();
+            foreach (var i in AllChannels)
+            {
+                try 
+                {
+                    if (i.Name.StartsWith(prefix))
+                    {
+                        await i.DeleteAsync().ConfigureAwait(false);
+                    }
+                }
+                catch { }
+            }
+            var AllRoles = Context.Guild.Roles.ToArray();
+            foreach (var i in AllRoles)
+            {
+                try
+                {
+                    if (i.Name.StartsWith(prefix))
+                    {
+                        await i.DeleteAsync().ConfigureAwait(false);
+                    }
+                }
+                catch { }
+            }
+        }
+
+        [Command("create")]
+        public async Task Create(int players, string prefix = "player")
+        {
+            await Clear(prefix).ConfigureAwait(false);
+            for (int i = 1; i <= players; i++)
+            {
+                await Context.Guild.CreateTextChannelAsync(prefix + i.ToString()).ConfigureAwait(false);
+            }
+        }
+
+        [Command("play")]
+        public async Task PlaySecretHitler(int delay = 30)
+        {
+            await Create(10).ConfigureAwait(false);
+            await 
+                (await Context.Channel.SendMessageAsync($"/_game {delay}").ConfigureAwait(false))
+                .DeleteAsync().ConfigureAwait(false);
+        }
+
+        [Command("_game")]
+        public async Task Game(int delay = 42, string s = null, int TestMultiplier = 1)
+        {
+            //await Context.Client.StopAsync().ConfigureAwait(false);
+            //await Context.Client.StartAsync().ConfigureAwait(false);
+
+            const string prefix = "player";
+
             var StartVoteMessage = await Context.Channel
-                .SendMessageAsync("The game will start in 42 seconds. Press 👍 to take part")
+                .SendMessageAsync($"The game will start in {delay} seconds. Press 👍 to take part")
                 .ConfigureAwait(false);
             await StartVoteMessage.AddReactionAsync(new Emoji("👍"))
                 .ConfigureAwait(false);
-            await Task.Delay(7*1000) //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-                .ConfigureAwait(false); 
+            await Task.Delay(delay * 1000)
+                .ConfigureAwait(false);
             var arr = (await StartVoteMessage
                 .GetReactionUsersAsync(new Emoji("👍"), 11)
                 .FlattenAsync()
                 .ConfigureAwait(false))
                 .ToArray();
+            ulong BotId = Context.Client.Rest.CurrentUser.Id;
             for (int i = 1; i < arr.Length; i++)
             {
-                if (arr[i].IsBot)
+                if (arr[i].Id == BotId)
                 {
                     SH.DamnMethods.Swap(ref arr[i], ref arr[0]);
                 }
             }
-            if (!arr[0].IsBot)
+            if (arr[0].Id != BotId)
             {
                 Console.WriteLine("Bot is missing!");
-                throw new Exception("Bot is not in the game!");
+                await Context.Channel.SendMessageAsync("Where am I?..").ConfigureAwait(false);
+                return;
             }
-            await Context.Channel.SendMessageAsync("Players:").ConfigureAwait(false);
+            Console.WriteLine("Players:");
             foreach (var i in arr)
             {
-                if (!i.IsBot)
+                if (i.Id != BotId)
                 {
-                    await Context.Channel.SendMessageAsync($"{i.Username} is in the game!").ConfigureAwait(false);
+                    Console.WriteLine($"{i.Username} is in the game!");
                 }
             }
-            //---------------------------------------------------------------------------------------------------------------------
-            var temparr = new IUser[1 + (arr.Length - 1) * 3];
+
+            // --- Игра за множество игроков при тестировании --- 
+            var temparr = new IUser[1 + (arr.Length - 1) * TestMultiplier];
             int p = 0;
             foreach (var i in arr)
             {
-                if (i.IsBot)
+                if (i.Id == BotId)
                 {
                     temparr[0] = i;
                 }
                 else
                 {
-                    p++;
-                    temparr[p] = i;
-                    p++;
-                    temparr[p] = i;
-                    p++;
-                    temparr[p] = i;
+                    for(int j = 0; j < TestMultiplier; j++)
+                    {
+                        p++;
+                        temparr[p] = i;
+                    }
                 }
             }
             arr = temparr;
-            Console.WriteLine($"Total players: {arr.Length - 1}");
-            //---------------------------------------------------------------------------------------------------------------------
-            SocketTextChannel[] chnls = new SocketTextChannel[arr.Length];
-            chnls[0] = Context.Channel as SocketTextChannel;
-            var channels = Context.Guild.TextChannels;
-            foreach (var chnl in channels)
+            // --- Игра за множество игроков при тестировании --- 
+
+            SH.DamnMethods.Shuffle(arr, 1, arr.Length);
+
+            SocketTextChannel GetTextChannelByName(string name)
             {
-                try
+                var AllChannels = Context.Guild.TextChannels.ToArray();
+                foreach (var i in AllChannels)
                 {
-                    if (chnl.Name.StartsWith("player")) 
+                    if (i.Name.Equals(name))
                     {
-                        int num = Convert.ToInt32(chnl.Name.Substring(6));
-                        if (0 < num && num < arr.Length)
-                        {
-                            chnls[num] = chnl;
-                            await chnl.SendMessageAsync("Heil!").ConfigureAwait(false);
-                        }
+                        return i;
                     }
                 }
-                catch
+                return null;
+            }
+            for (int i = arr.Length; i <= 10; i++)
+            {
+                var chat = GetTextChannelByName(prefix + i.ToString());
+                if (chat != null)
                 {
-                    Console.WriteLine($"Whoops! I thought that {chnl.Name} is player channel!");
+                    await chat.DeleteAsync().ConfigureAwait(false);
                 }
+            }
+
+            var chats = new SocketTextChannel[arr.Length];
+            var rnd = new Random();
+            for (int i = 1; i < arr.Length; i++)
+            {
+                var role = await Context.Guild.CreateRoleAsync(prefix + i.ToString(), null, 
+                    new Color(rnd.Next(256), rnd.Next(256), rnd.Next(256)), false, null)
+                    .ConfigureAwait(false);
+                await Context.Guild.GetUser(arr[i].Id).AddRoleAsync(role).ConfigureAwait(false);
+
+                chats[i] = GetTextChannelByName(prefix + i.ToString());
+                if (chats[i] == null)
+                {
+                    Console.WriteLine($"Not enough reserved seats!");
+                    await Context.Channel.SendMessageAsync($"Please, use command /create {arr.Length - 1}").ConfigureAwait(false);
+                    return;
+                }
+
+                await chats[i].AddPermissionOverwriteAsync(
+                    Context.Guild.EveryoneRole, 
+                    OverwritePermissions.DenyAll(chats[i]))
+                    .ConfigureAwait(false);
+                await chats[i].AddPermissionOverwriteAsync(role, OverwritePermissions.DenyAll(chats[i]).Modify(
+                    viewChannel: PermValue.Allow,
+                    readMessageHistory: PermValue.Allow,
+                    //sendMessages: PermValue.Allow,
+                    addReactions: PermValue.Allow))
+                    .ConfigureAwait(false);
+            }
+
+            Console.WriteLine($"Total players: {arr.Length - 1}");
+            var chnls = new SocketTextChannel[arr.Length];
+            chnls[0] = Context.Channel as SocketTextChannel;
+            for (int i = 1; i < arr.Length; i++)
+            {
+                chnls[i] = Context.Guild.GetTextChannel(chats[i].Id);
             }
 
             try
             {
-                var SecretHitlerGame = new SH.Game(Context.Guild, arr);
-                await SecretHitlerGame.Play(chnls).ConfigureAwait(false);
+                Console.WriteLine($"TEST0");
+                bool logs = (s != null ? true : false);
+                Console.WriteLine($"There will be {(logs ? "" : "NO")} secret logs.");
+                var SecretHitlerGame = new SH.Game(Context.Guild, logs);
+                Console.WriteLine($"TEST13");
+                await SecretHitlerGame.Play(arr, chnls).ConfigureAwait(false);
+                Console.WriteLine($"TEST42");
+            }
+            catch (SH.Game.GameOver)
+            {
+                Console.WriteLine($"Game is over.");
                 await Context.Channel.SendMessageAsync("Well played!").ConfigureAwait(false);
+                await Task.Delay(7 * 1000).ConfigureAwait(false);
+                await Clear(prefix).ConfigureAwait(false); // Требуется улучшение: не удаляются роли
+                await Context.Channel.SendMessageAsync("Another one? ( ͡° ͜ʖ ͡°)").ConfigureAwait(false);
             }
             catch
             {
                 Console.WriteLine($"Critical error. Exit game.");
-                await Context.Channel.SendMessageAsync("Critical error. Exit game.").ConfigureAwait(false);
+                await Context.Channel.SendMessageAsync("Oops! Something went wrong!..").ConfigureAwait(false);
             }
-
+            
         }
 
         [Command("break")]
-        public async Task Break()
+        public async Task Break(string s = null)
         {
+            if (s != null)
+            {
+                await ReplyAsync("Extra T H I C C").ConfigureAwait(false);
+            }
             await ReplyAsync("S U C C").ConfigureAwait(false);
         }
 
-        [Command("numbers")]
-        public async Task Numbers()
-        {
-            var NumbersEmoji = new Emoji[11];
-            NumbersEmoji[0] = new Emoji("\u0030\uFE0F\u20E3");
-            NumbersEmoji[1] = new Emoji("\u0031\uFE0F\u20E3");
-            NumbersEmoji[2] = new Emoji("\u0032\uFE0F\u20E3");
-            NumbersEmoji[3] = new Emoji("\u0033\uFE0F\u20E3");
-            NumbersEmoji[4] = new Emoji("\u0034\uFE0F\u20E3");
-            NumbersEmoji[5] = new Emoji("\u0035\uFE0F\u20E3");
-            NumbersEmoji[6] = new Emoji("\u0036\uFE0F\u20E3");
-            NumbersEmoji[7] = new Emoji("\u0037\uFE0F\u20E3");
-            NumbersEmoji[8] = new Emoji("\u0038\uFE0F\u20E3");
-            NumbersEmoji[9] = new Emoji("\u0039\uFE0F\u20E3");
-            NumbersEmoji[10] = new Emoji("🔟");
-            for (int i = 0; i <= 10; i++)
-            {
-                try
-                {
-                    await Context.Message.AddReactionAsync(NumbersEmoji[i]).ConfigureAwait(false);
-                } catch { };
-            }
-        }
     }
 }

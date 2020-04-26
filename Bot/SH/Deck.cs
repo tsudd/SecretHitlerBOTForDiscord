@@ -11,7 +11,11 @@ namespace Bot.SH
     }
     class Deck
     {
-        StringBuilder deckRB;
+        private StringBuilder deckRB;
+        private StringBuilder discard;
+
+        public string DeckRB { get => deckRB.ToString(); }
+        public string Discard { get => discard.ToString(); }
 
         public Deck(int fascCount, int libCount)
         {
@@ -25,12 +29,24 @@ namespace Bot.SH
                 str[i] = (char)Card.Blue;
             }
             DamnMethods.Shuffle(str);
-            deckRB = new StringBuilder(str.ToString());
+            deckRB = new StringBuilder(new string(str));
+            discard = new StringBuilder();
         }
         public Deck() : this(11, 6) { }
 
+        private void RefillDeck()
+        {
+            var str = discard.ToString().ToCharArray();
+            DamnMethods.Shuffle(str);
+            deckRB.Append(str);
+            discard.Clear();
+        }
         public Card[] ShowThreeCards()
         {
+            if (deckRB.Length < 3)
+            {
+                RefillDeck();
+            }
             var ans = new Card[3];
             for (int i = 0; i < 3; i++)
             {
@@ -46,13 +62,17 @@ namespace Bot.SH
         }
         public Card DropOneCard()
         {
+            if (deckRB.Length < 1)
+            {
+                RefillDeck();
+            }
             Card ans = (Card)deckRB[0];
             deckRB.Remove(0, 1);
             return ans;
         }
         public void PushOneCard(Card what)
         {
-            deckRB.AppendFormat(((char)what).ToString());
+            discard.Append((char)what);
         }
     }
 }

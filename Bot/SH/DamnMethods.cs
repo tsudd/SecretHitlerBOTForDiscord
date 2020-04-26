@@ -12,21 +12,19 @@ namespace Bot.SH
             lhs = rhs;
             rhs = temp;
         }
-        public static void Shuffle<T>(T[] a, int L, int R)
+        public static void Shuffle<T>(T[] a, int L, int R) // Shuffle a [ L .. R - 1 ]
         {
             var rnd = new Random();
-            int n = R - L + 1;
+            int n = R - L;
             while (n > 1)
             {
                 int k = L + rnd.Next(n--);
-                T tmp = a[L + n];
-                a[L + n] = a[k];
-                a[k] = tmp;
+                Swap(ref a[L + n], ref a[k]);
             }
         }
         public static void Shuffle<T>(T[] a)
         {
-            Shuffle(a, 0, a.Length - 1);
+            Shuffle(a, 0, a.Length);
         }
     }
 }
